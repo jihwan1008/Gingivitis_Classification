@@ -6,15 +6,17 @@ import torch.backends.cudnn as cudnn
 import torchvision.models as models
 import torchvision
 import torchvision.transforms as transforms
-
+from torch.utils.tensorboard import SummaryWriter
 import os
 import argparse
 
 #from models import *
 from utils import progress_bar
 
+writer = SummaryWriter()
+
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
+parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
 parser.add_argument('--name', default='best', type=str, help='name of the file')
 parser.add_argument('--epoch', default=100, type=int, help='num of epoch')
 parser.add_argument('--resume', '-r', action='store_true',
@@ -27,6 +29,7 @@ start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
 print('==> Preparing data..')
 transform_train = transforms.Compose([
+    transforms.RandomCrop(size=[224,224], padding=30),
     transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
@@ -91,6 +94,8 @@ def train(epoch):
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                      % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+        writer.add_scalar('Loss/train', train_loss/(batch_idx+1), epoch)
+        writer.add_scalar('Accuracy/train', 100.*correct/total, epoch)
 
 
 def test(epoch):
@@ -112,6 +117,8 @@ def test(epoch):
 
             progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                          % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
+            writer.add_scalar('Loss/test', test_loss / (batch_idx + 1), epoch)
+            writer.add_scalar('Accuracy/test', 100. * correct / total, epoch)
 
     # Save checkpoint.
     acc = 100.*correct/total
